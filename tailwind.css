@@ -4,3 +4,4 @@
         light --default,
         dark --prefersdark;
 }
+@source "./src/**/*.{rs,html,css}";

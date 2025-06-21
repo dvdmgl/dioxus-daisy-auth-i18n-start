@@ -22,3 +22,22 @@ blog = This is blog #{$id}
 bu = button
     .prev = Previous
     .next = Next
+    .close = Close
+
+register = Create Account
+    .suc = Account with email { $username } was created with success.
+login = Login
+    .suc = Welcome { $username }.
+logout = Logout
+    .suc = Your session was terminated.
+
+frm-password = Password
+    .err = Must be more than 8 characters, including number, lowercase letter, uppercase letter
+    .invalid = Invalid password
+
+frm-email = Email
+    .err = Must enter a valid email address.
+    .in-use = The email provided it's in use.
+    .free = The email provided it's valid.
+
+unexpected = Oops, we encountered an error. Please report this to the developer of this application.

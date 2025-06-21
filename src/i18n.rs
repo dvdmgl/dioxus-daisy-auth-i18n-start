@@ -2,7 +2,7 @@ use dioxus::{logger::tracing::debug, prelude::*};
 use dioxus_i18n::{
     prelude::i18n,
     tid,
-    unic_langid::{langid, LanguageIdentifier},
+    unic_langid::{LanguageIdentifier, langid},
 };
 
 pub static EN_US: LanguageIdentifier = langid!("en-US");
@@ -20,7 +20,7 @@ pub fn LanguageSelect() -> Element {
                 class: "btn btn-ghost",
                 svg {
                     xmlns: "http://www.w3.org/2000/svg",
-                    class: "h-5 w-5",
+                    class: "size-[1.2em]",
                     fill: "none",
                     view_box: "0 0 24 24",
                     stroke: "currentColor",

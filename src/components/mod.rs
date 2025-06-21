@@ -7,3 +7,5 @@ pub use hero::Hero;
 
 mod echo;
 pub use echo::Echo;
+mod alert;
+pub use alert::{Alert, AlertDisplay};

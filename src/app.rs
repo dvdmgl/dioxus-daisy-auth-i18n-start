@@ -1,13 +1,8 @@
-// use_context_provider(|| TitleState("HotDog".to_string()));
+use crate::{components::Alert, views::*};
+use dioxus::{CapturedError, prelude::*};
+use dioxus_i18n::prelude::{I18nConfig, Locale, use_init_i18n};
 
-use crate::views::*;
-use dioxus::prelude::*;
-use dioxus_i18n::prelude::{use_init_i18n, I18nConfig, Locale};
-
-// We can import assets in dioxus with the `asset!` macro. This macro takes a path to an asset relative to the crate root.
-// The macro returns an `Asset` type that will display as the path to the asset in the browser or a local path in desktop bundles.
 const FAVICON: Asset = asset!("/assets/favicon.ico");
-// The asset macro also minifies some assets like CSS and JS to make bundled smaller
 const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
@@ -16,7 +11,7 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 pub enum Route {
     // The layout attribute defines a wrapper for all routes under the layout. Layouts are great for wrapping
     // many routes with a common UI like a navbar.
-    #[layout(Navbar)]
+    #[layout(MainLayout)]
         // The route attribute defines the URL pattern that a specific route matches. If that pattern matches the URL,
         // the component for that route will be rendered. The component name that is rendered defaults to the variant name.
         #[route("/")]
@@ -27,6 +22,10 @@ pub enum Route {
         // Fields of the route variant will be passed to the component as props. In this case, the blog component must accept
         // an `id` prop of type `i32`.
         Blog { id: i32 },
+        #[route("/register")]
+        Register {},
+        #[route("/login")]
+        Login {},
 }
 
 #[derive(Clone)]
@@ -34,12 +33,13 @@ pub struct DarkMode(pub Signal<bool>);
 
 impl DarkMode {
     pub fn theme(&self) -> &'static str {
-        if *self.0.read() {
-            "dark"
-        } else {
-            "light"
-        }
+        if *self.0.read() { "dark" } else { "light" }
     }
+}
+
+#[derive(Clone, Copy, Default)]
+pub struct MyState {
+    pub alert: Signal<Option<(Alert, String)>>,
 }
 
 /// App is the main component of our app. Components are the building blocks of dioxus apps. Each component is a function
@@ -49,7 +49,16 @@ impl DarkMode {
 #[component]
 pub fn App() -> Element {
     let is_dark = use_signal(|| false);
+
+    // Initialize logged_user from the server
+    let user = use_server_future(crate::shared::user::get_user_session)?
+        .clone()
+        .unwrap()
+        .map_err(CapturedError::from_display)?;
+
+    use_context_provider(MyState::default);
     use_context_provider(|| DarkMode(is_dark));
+    use_context_provider(|| Signal::new(user));
     use_init_i18n(|| {
         I18nConfig::new(crate::i18n::EN_US.clone())
             .with_locale(Locale::new_static(

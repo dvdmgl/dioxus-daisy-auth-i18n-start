@@ -24,3 +24,24 @@ blog = Este é o blog #{$id}
 bu = button
     .prev = Anterior
     .next = Seguinte
+    .close = Fechar
+
+register = Criar Conta
+    .suc = Conta com o email { $username } foi criada com sucesso.
+
+login = Entrar
+    .suc = Bem vindo { $username }.
+
+logout = Sair
+    .suc = A sessão foi terminda com sucesso.
+
+frm-password = Palavra-passe
+    .err = Deve ter mais de 8 caracteres, incluindo número, letra minúscula e letra maiúscula
+    .invalid = Palavra-passe invalida
+
+frm-email = E-mail
+    .err = Deve introduzir um endereço de e-mail válido.
+    .in-use = O e-mail fornecido está a ser usado.
+    .free = O e-mail fornecido é válido.
+
+unexpected = Oops, encontrámos um erro. Por favor, relate isto ao programador desta aplicação.

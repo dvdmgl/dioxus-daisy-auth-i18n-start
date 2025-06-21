@@ -1,12 +1,24 @@
-/// Define a components module that contains all shared components for our app.
+mod app;
 mod components;
-/// Define a views module that contains the UI for all Layouts and Routes for our app.
+mod i18n;
+mod shared;
 mod views;
 
-mod app;
+#[cfg(feature = "server")]
 mod backend;
-mod i18n;
 
 fn main() {
+    #[cfg(feature = "web")]
+    // Hydrate the application on the client
     dioxus::launch(app::App);
+
+    // Launch axum on the server
+    #[cfg(feature = "server")]
+    {
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async move {
+                backend::launch_server(app::App).await;
+            });
+    }
 }
