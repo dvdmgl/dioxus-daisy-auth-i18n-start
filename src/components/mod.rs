@@ -9,3 +9,6 @@ mod echo;
 pub use echo::Echo;
 mod alert;
 pub use alert::{Alert, AlertDisplay};
+
+mod theme_control;
+pub use theme_control::ThemeControl;
