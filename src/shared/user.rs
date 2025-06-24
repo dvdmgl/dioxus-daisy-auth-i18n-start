@@ -79,8 +79,13 @@ pub async fn submit_create_user(payload: RegisterPayload) -> Result<Option<User>
 #[server(LoginUser)]
 pub async fn login_user(payload: Credentials) -> Result<Option<User>, ServerFnError> {
     use axum_login::AuthnBackend;
-    let session: SessionWrapper = dbg!(extract().await)?;
-    Ok(session.session.backend.authenticate(payload).await?)
+    let mut session: SessionWrapper = extract().await?;
+    if let Some(user) = session.session.backend.authenticate(payload).await? {
+        session.session.login(&user).await?;
+        Ok(Some(user))
+    } else {
+        Ok(None)
+    }
 }
 
 #[server(LogoutUser)]
