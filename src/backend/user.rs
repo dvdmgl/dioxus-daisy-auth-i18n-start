@@ -45,8 +45,8 @@ pub async fn create_user(
         .query_one(&stmt, &[&email, &hashed_password, &UserRole::User])
         .await
         .map_err(|e| {
-            error!("Failed to insert user into DB: {}", e);
-            BackendError::DbError(format!("Failed to create user: {}", e))
+            error!("Failed to insert user into DB: {e}");
+            BackendError::DbError(format!("Failed to create user: {e}"))
         })?;
     let user = User::from(row);
 
@@ -78,11 +78,11 @@ pub async fn set_user_password(
         .query_one(&stmt, &[&user, &hashed_password])
         .await
         .map_err(|e| {
-            error!("Failed to update user password: {}", e);
-            BackendError::DbError(format!("Failed to update user password: {}", e))
+            error!("Failed to update user password: {e}");
+            BackendError::DbError(format!("Failed to update user password: {e}"))
         })?;
 
-    info!("User updated successfully: {}", user);
+    info!("User updated successfully: {user}");
     Ok(())
 }
 
@@ -91,7 +91,7 @@ pub async fn check_email(
     client: &deadpool_postgres::Client,
     email: String,
 ) -> Result<bool, BackendError> {
-    info!("Attempting to check if email it's free: {}", email);
+    info!("Attempting to check if email it's free: {email}");
     let stmt = client
         .prepare_typed_cached(
             "SELECT true FROM app_user where email = $1",
@@ -100,8 +100,8 @@ pub async fn check_email(
         .await?;
     // check if the user email in db
     let row = client.query_opt(&stmt, &[&email]).await.map_err(|e| {
-        error!("Failed to insert user into DB: {}", e);
-        BackendError::DbError(format!("Failed to create user: {}", e))
+        error!("Failed to insert user into DB: {e}");
+        BackendError::DbError(format!("Failed to create user: {e}"))
     })?;
     if row.is_some() { Ok(false) } else { Ok(true) }
 }
@@ -121,5 +121,5 @@ pub async fn validate_password(
         .await?;
 
     let resp = dbg!(client.query_one(&stmt, &[&user]).await)?;
-    Ok(verify_password(password, resp.get::<_, &str>(0))?)
+    verify_password(password, resp.get::<_, &str>(0))
 }

@@ -25,11 +25,11 @@ pub fn PasswordInput(name: &'static str, placeholder: String, title: String) -> 
                 }
             }
             input {
-                placeholder: "{placeholder}",
+                placeholder: placeholder,
                 r#type: "password",
                 name: "{name}",
                 required: true,
-                title: "{title}",
+                title: title,
             }
             p { class: "validator-hint hidden",
                 "{title}"

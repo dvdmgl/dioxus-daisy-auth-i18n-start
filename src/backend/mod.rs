@@ -115,16 +115,16 @@ pub async fn launch_server(_component: fn() -> Element) {
     let pool = pg_config
         .builder(NoTls)
         .map_err(|e| {
-            error!("Failed to build database pool config: {}", e);
-            BackendError::DbError(format!("Failed to build database pool config: {}", e))
+            error!("Failed to build database pool config: {e}");
+            BackendError::DbError(format!("Failed to build database pool config: {e}"))
         })
         .expect("connect with tls")
         .max_size(20)
         .runtime(Runtime::Tokio1)
         .build()
         .map_err(|e| {
-            error!("Failed to build database pool: {}", e);
-            BackendError::DbError(format!("Failed to build database pool: {}", e))
+            error!("Failed to build database pool: {e}");
+            BackendError::DbError(format!("Failed to build database pool: {e}"))
         })
         .expect("to create a pool");
 

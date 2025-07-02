@@ -44,7 +44,7 @@ pub struct MyState {
 
 // handling FOUD, if the store doesn't have `data-theme` will be set the window.matchMedia,
 // components::ThemeControl will get handle it's changes and state by using setAttribute and localStorage.setItem
-static THEME_BOOTSTRAP: &'static str = r#"
+static THEME_BOOTSTRAP: &str = r#"
     <script>
     (function() {
         try {
