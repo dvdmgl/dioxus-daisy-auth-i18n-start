@@ -24,16 +24,26 @@ bu = button
     .next = Next
     .close = Close
 
+user = User
+    .not-found = User not found
+
 register = Create Account
     .suc = Account with email { $username } was created with success.
+
 login = Login
     .suc = Welcome { $username }.
+    .required = Login required
+
 logout = Logout
     .suc = Your session was terminated.
 
 frm-password = Password
     .err = Must be more than 8 characters, including number, lowercase letter, uppercase letter
     .invalid = Invalid password
+    .change = Change Password
+    .old = Old Password
+    .new = New Password
+    .suc-change = Your password was changed.
 
 frm-email = Email
     .err = Must enter a valid email address.
@@ -41,3 +51,6 @@ frm-email = Email
     .free = The email provided it's valid.
 
 unexpected = Oops, we encountered an error. Please report this to the developer of this application.
+
+unauthorized = Unauthorized
+forbidden = Forbidden: You do not have permission to access this resource.

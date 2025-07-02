@@ -26,11 +26,15 @@ bu = button
     .next = Seguinte
     .close = Fechar
 
+user = User
+    .not-found = Utilizador não encontrado.
+
 register = Criar Conta
     .suc = Conta com o email { $username } foi criada com sucesso.
 
 login = Entrar
     .suc = Bem vindo { $username }.
+    .required = Login necessário.
 
 logout = Sair
     .suc = A sessão foi terminda com sucesso.

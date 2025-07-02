@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 #[cfg(feature = "server")]
 use validator::Validate;
 
@@ -16,6 +17,15 @@ pub struct Credentials {
     #[cfg_attr(feature = "server", validate(length(min = 8, max = 16)))]
     pub password: String,
     pub next: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(Validate))]
+pub struct ChangePassword {
+    #[cfg_attr(feature = "server", validate(length(min = 8, max = 16)))]
+    pub old_password: String,
+    #[cfg_attr(feature = "server", validate(length(min = 8, max = 16)))]
+    pub new_password: String,
 }
 
 /// Struct for user registration payload (from frontend to backend).
@@ -36,7 +46,7 @@ pub struct CheckEmail {
     pub email: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[cfg_attr(
     feature = "server",
     derive(postgres_types::ToSql, postgres_types::FromSql)
@@ -55,6 +65,25 @@ pub enum UserRole {
     Naughty,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "server",
+    derive(postgres_types::ToSql, postgres_types::FromSql)
+)]
+#[cfg_attr(feature = "server", postgres(name = "app_user_permission"))]
+pub enum UserPermission {
+    #[cfg_attr(feature = "server", postgres(name = "deleteuser"))]
+    DeleteUser,
+    #[cfg_attr(feature = "server", postgres(name = "markasnaughty"))]
+    MarkAsNaughty,
+    #[cfg_attr(feature = "server", postgres(name = "prodemoteuser"))]
+    ProDemoteUser,
+    #[cfg_attr(feature = "server", postgres(name = "edituserpermissions"))]
+    EditUserPermissions,
+    #[cfg_attr(feature = "server", postgres(name = "read"))]
+    Read,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct User {
     pub id: i64,
@@ -62,6 +91,7 @@ pub struct User {
     pub c_at: DateTime<Utc>,
     pub u_at: DateTime<Utc>,
     pub role: UserRole,
+    pub skey: Uuid,
 }
 
 #[server(SubmitCreateUser)]
@@ -85,6 +115,23 @@ pub async fn login_user(payload: Credentials) -> Result<Option<User>, ServerFnEr
         Ok(Some(user))
     } else {
         Ok(None)
+    }
+}
+
+#[server(ChangeUserPassword)]
+pub async fn change_password(payload: ChangePassword) -> Result<(), ServerFnError> {
+    let session: SessionWrapper = extract().await?;
+    match session.session.user {
+        Some(user) => {
+            let client = session.session.backend.db.get().await?;
+            crate::backend::user::validate_password(&client, user.id, &payload.old_password)
+                .await?;
+            Ok(
+                crate::backend::user::set_user_password(&client, user.id, &payload.new_password)
+                    .await?,
+            )
+        }
+        None => Err(crate::backend::errors::BackendError::Unauthorized)?,
     }
 }
 

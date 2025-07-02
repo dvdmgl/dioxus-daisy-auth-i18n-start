@@ -1,6 +1,8 @@
 pub mod auth;
-mod errors;
+pub mod errors;
 pub mod user;
+
+use std::collections::{HashMap, HashSet};
 
 use axum::{Extension, extract::FromRef};
 use axum_extra::extract::cookie::{Key, SameSite};
@@ -8,12 +10,15 @@ use axum_login::{
     AuthManagerLayerBuilder,
     tower_sessions::{Expiry, MemoryStore, SessionManagerLayer, cookie::time},
 };
+// use dashmap::DashMap;
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod, Runtime};
 use dioxus::{fullstack::*, prelude::*};
 use errors::BackendError;
 use serde::Deserialize;
 use tokio_postgres::NoTls;
 use tracing::error;
+
+use crate::shared::user::{UserPermission, UserRole};
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -34,6 +39,38 @@ pub struct BackendState {
     pub db: Pool,
     /// A key used for signing and verifying cookies.
     pub key: Key,
+    pub groups: HashMap<UserRole, HashSet<UserPermission>>,
+}
+
+impl BackendState {
+    async fn new(db: Pool) -> Self {
+        let client = db.get().await.expect("failed to get client");
+
+        let stmt = client
+            .prepare_typed_cached("SELECT role, permission FROM app_groups_permissions", &[])
+            .await
+            .expect("failed to prepare statement");
+
+        let rows = client
+            .query(&stmt, &[])
+            .await
+            .expect("failed to make query");
+        let mut groups = HashMap::new();
+        for r in rows {
+            let (role, permission): (UserRole, UserPermission) = (r.get(0), r.get(1));
+            groups
+                .entry(role)
+                .and_modify(|e: &mut HashSet<UserPermission>| {
+                    e.insert(permission);
+                })
+                .or_insert(HashSet::default());
+        }
+        Self {
+            db,
+            key: Key::generate(),
+            groups,
+        }
+    }
 }
 
 /// Allows extracting the `Key` from `AppState`.
@@ -91,10 +128,7 @@ pub async fn launch_server(_component: fn() -> Element) {
         })
         .expect("to create a pool");
 
-    let state = BackendState {
-        key: Key::generate(),
-        db: pool,
-    };
+    let state = BackendState::new(pool).await;
 
     let session_store = MemoryStore::default();
 

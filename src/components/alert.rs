@@ -36,6 +36,7 @@ pub fn AlertDisplay() -> Element {
     let mut alert_msg = use_context::<MyState>().alert;
     let close = move |_: Event<_>| alert_msg.set(None);
     if let Some((alert, msg)) = &*alert_msg.read() {
+        tracing::debug!("this was the message in the error: {msg}");
         let message = if let Some(m) = msg.strip_prefix("error running server function: ") {
             tid!(m)
         } else {

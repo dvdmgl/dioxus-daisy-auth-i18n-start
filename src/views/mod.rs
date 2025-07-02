@@ -11,4 +11,8 @@ mod layout;
 pub use layout::MainLayout;
 
 mod user;
-pub use user::{create::Register, login::Login};
+pub use user::{
+    create::Register,
+    login::Login,
+    settings::{UpdatePassword, UserSettings, UserSettingsResume},
+};

@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use thiserror::Error;
-use tracing::error;
+use tracing::{error, warn};
 
 /// Custom error type for backend operations.
 ///
@@ -22,12 +22,14 @@ pub enum BackendError {
     ValidationError(String),
     #[error("Internal server error: {0}")]
     InternalError(String),
-    #[error("Not found: {0}")]
+    #[error("{0}.not-found")]
     NotFound(String),
-    #[error("Unauthorized")]
+    #[error("unauthorized")]
     Unauthorized,
-    #[error("Forbidden")]
+    #[error("forbidden")]
     Forbidden,
+    #[error("login.required")]
+    LoginRequired,
 }
 
 // Implement `IntoResponse` for `BackendError` to convert it into an Axum response.
@@ -66,25 +68,23 @@ impl IntoResponse for BackendError {
             }
             BackendError::InternalError(msg) => {
                 error!("Internal Server Error: {}", msg);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "An unexpected error occurred.".to_string(),
-                )
+                (StatusCode::INTERNAL_SERVER_ERROR, "unexpected".to_string())
             }
             BackendError::NotFound(msg) => {
                 error!("Not Found Error: {}", msg);
-                (StatusCode::NOT_FOUND, msg.clone())
+                (StatusCode::NOT_FOUND, msg.to_string())
             }
             BackendError::Unauthorized => {
                 error!("Unauthorized access attempt.");
-                (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
+                (StatusCode::UNAUTHORIZED, "unauthorized".to_string())
+            }
+            BackendError::LoginRequired => {
+                warn!("Login required.");
+                (StatusCode::UNAUTHORIZED, "unauthorized.login".to_string())
             }
             BackendError::Forbidden => {
                 error!("Forbidden access attempt.");
-                (
-                    StatusCode::FORBIDDEN,
-                    "Forbidden: You do not have permission to access this resource.".to_string(),
-                )
+                (StatusCode::FORBIDDEN, "forbidden".to_string())
             }
         };
 

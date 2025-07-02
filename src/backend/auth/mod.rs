@@ -1,3 +1,5 @@
+mod authz;
+
 use argon2::{
     Argon2, PasswordHash, PasswordVerifier as _Argon2Verifier,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
@@ -18,10 +20,7 @@ impl AuthUser for User {
     }
 
     fn session_auth_hash(&self) -> &[u8] {
-        self.email.as_bytes() // We use the password hash as the auth
-        // hash--what this means
-        // is when the user changes their password the
-        // auth session becomes invalid.
+        self.skey.as_bytes()
     }
 }
 
@@ -39,7 +38,7 @@ impl AuthnBackend for BackendState {
 
         let stmt = client
             .prepare_typed_cached(
-                "SELECT id, c_at, m_at, email, role, password_hash \n
+                "SELECT id, c_at, m_at, skey, email, role, password_hash \n
          FROM app_user \n
          WHERE email = $1",
                 &[tokio_postgres::types::Type::TEXT],
@@ -50,7 +49,7 @@ impl AuthnBackend for BackendState {
         match resp {
             Ok(None) => Err(BackendError::NotFound("user".into())),
             Ok(Some(row)) => {
-                verify_password(&creds.password, row.get::<_, &str>(5))?;
+                verify_password(&creds.password, row.get::<_, &str>(6))?;
                 Ok(Some(User::from(row)))
             }
             Err(err) => Err(err.into()),
@@ -62,14 +61,13 @@ impl AuthnBackend for BackendState {
 
         let stmt = client
             .prepare_typed_cached(
-                "SELECT id, c_at, m_at, email, role, password_hash \n
+                "SELECT id, c_at, m_at, skey, email, role \n
          FROM app_user \n
          WHERE id = $1",
                 &[tokio_postgres::types::Type::INT8],
             )
             .await?;
         let user = client.query_opt(&stmt, &[&user_id]).await?.map(User::from);
-
         Ok(user)
     }
 }

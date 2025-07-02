@@ -26,6 +26,15 @@ pub enum Route {
         Register {},
         #[route("/login")]
         Login {},
+        #[nest("/settings")]
+            #[layout(UserSettings)]
+                #[route("/")]
+                UserSettingsResume {},
+                #[route("/password")]
+                UpdatePassword {},
+        //     #[end_layout]
+        // #[end_nest]
+    // #[end_layout]
 }
 
 #[derive(Clone, Copy, Default)]
@@ -71,6 +80,7 @@ pub fn App() -> Element {
         .clone()
         .unwrap()
         .map_err(CapturedError::from_display)?;
+    tracing::debug!("is there a logged user {:?}", user);
     use_context_provider(|| Signal::new(user));
 
     use_context_provider(MyState::default);

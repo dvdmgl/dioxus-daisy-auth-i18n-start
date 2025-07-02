@@ -78,13 +78,10 @@ fn AuthOptions() -> Element {
                     class: "menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow",
                     tabindex: "0",
                     li {
-                        a { class: "justify-between",
-                            "auth_acc.email"
-                            span { class: "badge", "New" }
+                        Link {
+                            to: Route::UserSettingsResume {  },
+                            {auth_acc.email}
                         }
-                    }
-                    li {
-                        a { "Settings" }
                     }
                     li {
                         a { onclick: logout,
