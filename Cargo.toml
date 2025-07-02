@@ -5,10 +5,13 @@ authors = ["dvdmgl <dvdmgl@gmail.com>"]
 edition = "2024"
 
 [dependencies]
+dioxus-time = "=0.1.0-alpha.1"
+# dioxus-time = { version = "0.0.1" }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.17.0", features = ["serde", "v4"] }
 serde = { version = "1", features = ["derive"] }
 dioxus = { version = "0.6", features = ["router", "fullstack"] }
+dioxus-sdk = { version = "0.6", features = ["timing"] }
 dioxus-cli-config = { version = "0.6", optional = true }
 dioxus-fullstack = { version = "0.6.3", optional = true }
 # cargo add dioxus-html

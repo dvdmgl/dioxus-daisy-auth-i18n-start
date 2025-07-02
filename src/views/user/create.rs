@@ -49,12 +49,11 @@ pub fn Register() -> Element {
                     nav.push(Route::Login {});
                 }
                 Err(e) => {
+                    tracing::info!("the error {}", &e);
                     alert.alert.set(Some((Alert::Error, e.to_string())));
-
-                    tracing::info!("the motherfucking error, basterd {}", &e);
                 }
                 Ok(None) => {
-                    tracing::info!("response has nothing");
+                    tracing::info!("Nothing in the response");
                 }
             }
         }

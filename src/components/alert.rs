@@ -34,14 +34,20 @@ impl Alert {
 #[component]
 pub fn AlertDisplay() -> Element {
     let mut alert_msg = use_context::<MyState>().alert;
+
+    let run_timeout = dioxus_time::use_timeout(std::time::Duration::from_secs(10), move |()| {
+        tracing::debug!("timer closed alert message");
+        alert_msg.set(None)
+    });
     let close = move |_: Event<_>| alert_msg.set(None);
     if let Some((alert, msg)) = &*alert_msg.read() {
-        tracing::debug!("this was the message in the error: {msg}");
+        tracing::debug!("alert display with message: {msg}");
         let message = if let Some(m) = msg.strip_prefix("error running server function: ") {
             tid!(m)
         } else {
             msg.clone()
         };
+        run_timeout.action(());
         rsx! {
             div {
                 role: "alert",
