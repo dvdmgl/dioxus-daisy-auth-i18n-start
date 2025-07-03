@@ -29,6 +29,7 @@ INSERT INTO
     app_groups_permissions (role, permission)
 VALUES
     ('guest', 'read'),
+    ('user', 'read'),
     ('staff', 'read'),
     ('staff', 'markasnaughty'),
     ('admin', 'deleteuser'),

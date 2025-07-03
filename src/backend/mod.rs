@@ -55,15 +55,10 @@ impl BackendState {
             .query(&stmt, &[])
             .await
             .expect("failed to make query");
-        let mut groups = HashMap::new();
+        let mut groups: HashMap<UserRole, HashSet<UserPermission>> = HashMap::new();
         for r in rows {
             let (role, permission): (UserRole, UserPermission) = (r.get(0), r.get(1));
-            groups
-                .entry(role)
-                .and_modify(|e: &mut HashSet<UserPermission>| {
-                    e.insert(permission);
-                })
-                .or_insert(HashSet::default());
+            groups.entry(role).or_default().insert(permission);
         }
         Self {
             db,
