@@ -32,9 +32,6 @@ pub enum Route {
                 UserSettingsResume {},
                 #[route("/password")]
                 UpdatePassword {},
-        //     #[end_layout]
-        // #[end_nest]
-    // #[end_layout]
 }
 
 #[derive(Clone, Copy, Default)]
@@ -59,10 +56,7 @@ static THEME_BOOTSTRAP: &str = r#"
                 localStorage.setItem('data-theme', 'light');
                 document.documentElement.setAttribute('data-theme', 'light');
             }
-            // Apply the theme attribute to the root HTML element
-            // console.log("data-theme", theme);
         } catch (e) {
-            // Log any errors without disrupting the page load
             console.error("Theme pre-render script error:", e);
         }
     })();

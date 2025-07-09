@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -94,6 +96,12 @@ pub struct User {
     pub skey: Uuid,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LoggedUser {
+    pub user: User,
+    pub perms: HashSet<UserPermission>,
+}
+
 #[server(SubmitCreateUser)]
 pub async fn submit_create_user(payload: RegisterPayload) -> Result<Option<User>, ServerFnError> {
     let auth: axum::Extension<crate::backend::BackendState> = extract().await?;
@@ -107,12 +115,19 @@ pub async fn submit_create_user(payload: RegisterPayload) -> Result<Option<User>
 }
 
 #[server(LoginUser)]
-pub async fn login_user(payload: Credentials) -> Result<Option<User>, ServerFnError> {
+pub async fn login_user(payload: Credentials) -> Result<Option<LoggedUser>, ServerFnError> {
     use axum_login::AuthnBackend;
     let mut session: SessionWrapper = extract().await?;
     if let Some(user) = session.session.backend.authenticate(payload).await? {
         session.session.login(&user).await?;
-        Ok(Some(user))
+        let perms = session
+            .session
+            .backend
+            .groups
+            .get(&user.role)
+            .ok_or(crate::backend::errors::BackendError::InternalError)?
+            .clone();
+        Ok(Some(LoggedUser { user, perms }))
     } else {
         Ok(None)
     }
@@ -155,10 +170,21 @@ pub async fn check_user_is_free(payload: CheckEmail) -> Result<Option<bool>, Ser
 }
 
 #[server(GetUserSession)]
-pub async fn get_user_session() -> Result<Option<User>, ServerFnError> {
+pub async fn get_user_session() -> Result<Option<LoggedUser>, ServerFnError> {
     let session: SessionWrapper = extract().await?;
+
     match session.session.user {
-        Some(user) => Ok(Some(user)),
+        Some(user) => {
+            let perms = session
+                .session
+                .backend
+                .groups
+                .get(&user.role)
+                .ok_or(crate::backend::errors::BackendError::Unauthorized)?
+                .clone();
+
+            Ok(Some(LoggedUser { user, perms }))
+        }
         None => Ok(None),
     }
 }

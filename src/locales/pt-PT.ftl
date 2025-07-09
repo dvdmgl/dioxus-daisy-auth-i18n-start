@@ -33,7 +33,7 @@ register = Criar Conta
     .suc = Conta com o email { $username } foi criada com sucesso.
 
 login = Entrar
-    .suc = Bem vindo { $username }.
+    .suc = Bem vindo de novo { $username }.
     .required = Login necessário.
 
 logout = Sair
@@ -42,10 +42,22 @@ logout = Sair
 frm-password = Palavra-passe
     .err = Deve ter mais de 8 caracteres, incluindo número, letra minúscula e letra maiúscula
     .invalid = Palavra-passe invalida
+    .change = Alterar Palavra-passe
+    .old = Palavra-passe antiga
+    .new = Nova Palavra-passe
+    .suc-change = Palavra-passe foi alterada.
 
 frm-email = E-mail
     .err = Deve introduzir um endereço de e-mail válido.
-    .in-use = O e-mail fornecido está a ser usado.
+    .duplicate = O e-mail fornecido está a ser usado.
     .free = O e-mail fornecido é válido.
 
 unexpected = Oops, encontrámos um erro. Por favor, relate isto ao programador desta aplicação.
+
+date = Data
+    .c-at = Criado em
+    .u-at = Modificado em
+
+resume = Resumo
+
+duplicate = Já existe uma entrada.

@@ -2,7 +2,7 @@ use crate::{
     app::{MyState, Route},
     components::{Alert, ThemeControl},
     i18n::LanguageSelect,
-    shared::user::User,
+    shared::user::LoggedUser,
 };
 use dioxus::prelude::*;
 use dioxus_i18n::tid;
@@ -42,7 +42,7 @@ pub fn NavBar() -> Element {
 
 #[component]
 fn AuthOptions() -> Element {
-    let mut auth = use_context::<Signal<Option<User>>>();
+    let mut auth = use_context::<Signal<Option<LoggedUser>>>();
     let mut alert = use_context::<MyState>();
     let nav = use_navigator();
     let logout = move |_: Event<_>| async move {
@@ -80,7 +80,7 @@ fn AuthOptions() -> Element {
                     li {
                         Link {
                             to: Route::UserSettingsResume {  },
-                            {auth_acc.email}
+                            {auth_acc.user.email}
                         }
                     }
                     li {

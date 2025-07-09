@@ -19,7 +19,7 @@ blog = This is blog #{$id}
        *[other] In blog #{$id}, we show how the Dioxus router works and how URL parameters can be passed as props to our route components.
     }
 
-bu = button
+bu = Button
     .prev = Previous
     .next = Next
     .close = Close
@@ -31,7 +31,7 @@ register = Create Account
     .suc = Account with email { $username } was created with success.
 
 login = Login
-    .suc = Welcome { $username }.
+    .suc = Welcome back { $username }.
     .required = Login required
 
 logout = Logout
@@ -47,10 +47,18 @@ frm-password = Password
 
 frm-email = Email
     .err = Must enter a valid email address.
-    .in-use = The email provided it's in use.
+    .duplicate = The email provided it's already associated with an account.
     .free = The email provided it's valid.
 
 unexpected = Oops, we encountered an error. Please report this to the developer of this application.
 
 unauthorized = Unauthorized
 forbidden = Forbidden: You do not have permission to access this resource.
+
+date = Date
+    .c-at = Created at
+    .u-at = Updated at
+
+resume = Resume
+
+duplicate = An entry already exists.

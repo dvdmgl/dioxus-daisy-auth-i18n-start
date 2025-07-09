@@ -1,8 +1,7 @@
 pub mod auth;
 pub mod errors;
+mod otlp;
 pub mod user;
-
-use std::collections::{HashMap, HashSet};
 
 use axum::{Extension, extract::FromRef};
 use axum_extra::extract::cookie::{Key, SameSite};
@@ -10,19 +9,20 @@ use axum_login::{
     AuthManagerLayerBuilder,
     tower_sessions::{Expiry, MemoryStore, SessionManagerLayer, cookie::time},
 };
-// use dashmap::DashMap;
 use deadpool_postgres::{Config, ManagerConfig, Pool, RecyclingMethod, Runtime};
 use dioxus::{fullstack::*, prelude::*};
-use errors::BackendError;
 use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 use tokio_postgres::NoTls;
-use tracing::error;
+use tower_http::trace::{self, TraceLayer};
+use tracing::Level;
 
 use crate::shared::user::{UserPermission, UserRole};
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     pub postgres: PostgresConfig,
+    pub otlp_endpoint: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct PostgresConfig {
@@ -77,7 +77,7 @@ impl FromRef<BackendState> for Key {
 
 impl AppConfig {
     pub fn new() -> Result<Self, errors::BackendError> {
-        dotenvy::dotenv().map_err(|_e| errors::BackendError::InternalError("failed".into()))?;
+        dotenvy::dotenv().map_err(|_e| errors::BackendError::InternalError)?;
         let postgres = PostgresConfig {
             host: std::env::var("POSTGRES_HOST").expect("POSTGRES_HOST"),
             port: std::env::var("POSTGRES_PORT")
@@ -88,7 +88,10 @@ impl AppConfig {
             password: std::env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD"),
             db: std::env::var("POSTGRES_DB").expect("POSTGRES_DB"),
         };
-        Ok(Self { postgres })
+        Ok(Self {
+            postgres,
+            otlp_endpoint: std::env::var("OTLP_ENDPOINT").expect("OTLP_ENDPOINT"),
+        })
     }
 }
 
@@ -109,21 +112,14 @@ pub async fn launch_server(_component: fn() -> Element) {
 
     let pool = pg_config
         .builder(NoTls)
-        .map_err(|e| {
-            error!("Failed to build database pool config: {e}");
-            BackendError::DbError(format!("Failed to build database pool config: {e}"))
-        })
-        .expect("connect with tls")
+        .expect("failed to create database pool no tls connection")
         .max_size(20)
         .runtime(Runtime::Tokio1)
         .build()
-        .map_err(|e| {
-            error!("Failed to build database pool: {e}");
-            BackendError::DbError(format!("Failed to build database pool: {e}"))
-        })
-        .expect("to create a pool");
+        .expect("failed create database pool");
 
     let state = BackendState::new(pool).await;
+    let provider = otlp::init_tracer(&config.otlp_endpoint);
 
     let session_store = MemoryStore::default();
 
@@ -135,6 +131,12 @@ pub async fn launch_server(_component: fn() -> Element) {
     let auth_layer = AuthManagerLayerBuilder::new(state.clone(), session_layer).build();
     let router = axum::Router::new()
         .serve_dioxus_application(ServeConfigBuilder::default(), crate::app::App)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO))
+                .on_failure(trace::DefaultOnFailure::new().level(Level::ERROR)),
+        )
         .layer(Extension(state))
         .layer(auth_layer)
         .into_make_service();
@@ -145,4 +147,7 @@ pub async fn launch_server(_component: fn() -> Element) {
     let address = SocketAddr::new(ip, port);
     let listener = tokio::net::TcpListener::bind(address).await.unwrap();
     axum::serve(listener, router).await.unwrap();
+    provider
+        .shutdown()
+        .expect("Failed to close tracer provider");
 }

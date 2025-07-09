@@ -1,27 +1,24 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use thiserror::Error;
+use tokio_postgres::error::SqlState;
 use tracing::{error, warn};
 
 /// Custom error type for backend operations.
 ///
 /// This enum centralizes error handling for database, authentication,
 /// and other server-side issues.
+///
+/// Errors should must be in fluent message
 #[cfg(feature = "server")]
 #[derive(Debug, Error)]
 pub enum BackendError {
-    #[error(transparent)]
-    PoolError(#[from] deadpool_postgres::PoolError),
-    #[error(transparent)]
-    TokioPostgresError(#[from] tokio_postgres::Error),
-    #[error("Database error: {0}")]
-    DbError(String),
-    #[error("Authentication error: {0}")]
+    #[error("{0}")]
     AuthError(String),
     #[error("{0}")]
     ValidationError(String),
-    #[error("Internal server error: {0}")]
-    InternalError(String),
+    #[error("std-err.internal")]
+    InternalError,
     #[error("{0}.not-found")]
     NotFound(String),
     #[error("unauthorized")]
@@ -30,6 +27,10 @@ pub enum BackendError {
     Forbidden,
     #[error("login.required")]
     LoginRequired,
+    #[error("duplicate")]
+    UniqueConstraintViolation,
+    #[error("frm-email.duplicate")]
+    DuplicateUser,
 }
 
 // Implement `IntoResponse` for `BackendError` to convert it into an Axum response.
@@ -37,27 +38,6 @@ pub enum BackendError {
 impl IntoResponse for BackendError {
     fn into_response(self) -> Response {
         let (status, error_message) = match &self {
-            BackendError::PoolError(e) => {
-                error!("Pool Error: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "server.internal".to_string(),
-                )
-            }
-            BackendError::TokioPostgresError(e) => {
-                error!("Database Error: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "server.internal".to_string(),
-                )
-            }
-            BackendError::DbError(msg) => {
-                error!("Database Error: {}", msg);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "A database error occurred.".to_string(),
-                )
-            }
             BackendError::AuthError(msg) => {
                 error!("Authentication Error: {}", msg);
                 (StatusCode::UNAUTHORIZED, msg.clone())
@@ -66,14 +46,17 @@ impl IntoResponse for BackendError {
                 error!("Validation Error: {}", msg);
                 (StatusCode::BAD_REQUEST, msg.clone())
             }
-            BackendError::InternalError(msg) => {
-                error!("Internal Server Error: {}", msg);
+            BackendError::InternalError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "unexpected".to_string())
             }
             BackendError::NotFound(msg) => {
                 error!("Not Found Error: {}", msg);
                 (StatusCode::NOT_FOUND, msg.to_string())
             }
+            BackendError::UniqueConstraintViolation => {
+                (StatusCode::BAD_REQUEST, "duplicate".to_string())
+            }
+            BackendError::DuplicateUser => (StatusCode::BAD_REQUEST, "duplicate user".to_string()),
             BackendError::Unauthorized => {
                 error!("Unauthorized access attempt.");
                 (StatusCode::UNAUTHORIZED, "unauthorized".to_string())
@@ -103,8 +86,36 @@ impl From<argon2::password_hash::Error> for BackendError {
             }
             _ => {
                 error!("argon2 {:?}", value);
-                BackendError::InternalError("frm-password.invalid".into())
+                BackendError::InternalError
             }
         }
+    }
+}
+
+impl From<tokio_postgres::Error> for BackendError {
+    fn from(error: tokio_postgres::Error) -> Self {
+        match error.as_db_error().map(|s| (s.code(), s.constraint())) {
+            Some((&SqlState::UNIQUE_VIOLATION, Some("app_user_email_key"))) => {
+                warn!(
+                    "UNIQUE_VIOLATION: try to create an new account with an already existing email"
+                );
+                BackendError::DuplicateUser
+            }
+            Some((&SqlState::UNIQUE_VIOLATION, Some(constraint))) => {
+                error!("UNIQUE_VIOLATION: {}", constraint);
+                BackendError::UniqueConstraintViolation
+            }
+            _ => {
+                error!("Database Error: {:?}", error);
+                BackendError::InternalError
+            }
+        }
+    }
+}
+
+impl From<deadpool_postgres::PoolError> for BackendError {
+    fn from(error: deadpool_postgres::PoolError) -> Self {
+        error!("Database Error: {:?}", error);
+        BackendError::InternalError
     }
 }

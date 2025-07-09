@@ -5,14 +5,14 @@ use super::components::{EmailInput, PasswordInput};
 use crate::{
     app::MyState,
     components::Alert,
-    shared::user::{Credentials, User},
+    shared::user::{Credentials, LoggedUser},
 };
 
 #[component]
 pub fn Login() -> Element {
     let mut alert = use_context::<MyState>();
 
-    let mut logged = use_context::<Signal<Option<User>>>();
+    let mut logged = use_context::<Signal<Option<LoggedUser>>>();
     let nav = use_navigator();
 
     let form_submit = move |evt: Event<FormData>| {
@@ -33,13 +33,15 @@ pub fn Login() -> Element {
         };
 
         async move {
+            tracing::debug!("sending to server");
             let resp = crate::shared::user::login_user(payload.clone()).await;
             match resp {
                 Ok(Some(user)) => {
                     logged.set(Some(user.clone()));
-                    alert
-                        .alert
-                        .set(Some((Alert::Info, tid!("login.suc", username: user.email))));
+                    alert.alert.set(Some((
+                        Alert::Info,
+                        tid!("login.suc", username: user.user.email),
+                    )));
                     nav.push("/");
                 }
                 Err(e) => {

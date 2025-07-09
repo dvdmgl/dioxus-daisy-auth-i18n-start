@@ -4,7 +4,7 @@ use dioxus_i18n::tid;
 use crate::{
     app::{MyState, Route},
     components::Alert,
-    shared::user::{ChangePassword, User},
+    shared::user::{ChangePassword, LoggedUser},
 };
 
 use super::components::PasswordInput;
@@ -77,7 +77,7 @@ pub fn UpdatePassword() -> Element {
 
 #[component]
 pub fn UserSettingsResume() -> Element {
-    let mut auth = use_context::<Signal<Option<User>>>();
+    let mut auth = use_context::<Signal<Option<LoggedUser>>>();
     let mut alert = use_context::<MyState>();
     let nav = use_navigator();
     let logout = move |_: Event<_>| async move {
@@ -88,19 +88,48 @@ pub fn UserSettingsResume() -> Element {
     };
 
     match auth() {
-        Some(user) => rsx! {
-            div { class: "card bg-primary text-primary-content w-96",
-                div { class: "card-body",
-                    h2 { class: "card-title", {user.email} }
-                    p {
-                        "A card component has a figure, a body part, and inside body thereare title and actions parts"
-                    }
-                    div { class: "card-actions justify-end",
-                        button { class: "btn", onclick: logout, {tid!("logout")} }
+        Some(user) => {
+            let role = user.user.role;
+            let c_at = user.user.c_at.format("%Y-%m-%d %H:%M:%S");
+            let u_at = user.user.u_at.format("%Y-%m-%d %H:%M:%S");
+            rsx! {
+                div { class: "card bg-base-200 text-primary-content w-96",
+                    div { class: "card-body",
+                        h2 { class: "card-title",
+                            {user.user.email}
+                            div { class:"badge badge-secondary",
+                                "{role:?}"
+                            }
+                        }
+                        ul { class: "list rounded-box shadow-md",
+                            li { class: "list-row",
+                                div {
+                                    {tid!("date.c-at")}
+                                }
+                                span { "{c_at}" }
+                            }
+                            li { class: "list-row",
+                                div {
+                                    {tid!("date.u-at")}
+                                }
+                                span { "{u_at}" }
+                            }
+                            li { class: "p-4 pb-2 text-xs opacity-60 tracking-wide",
+                                div {"permissions"}
+                            }
+                            {user.perms.iter().map(|perm| rsx! {
+                                li { class: "list-row",
+                                    span {"{perm:?}"}
+                                }
+                            })}
+                        }
+                        div { class: "card-actions justify-end",
+                            button { class: "btn", onclick: logout, {tid!("logout")} }
+                        }
                     }
                 }
             }
-        },
+        }
         None => {
             alert.alert.set(Some((Alert::Error, tid!("forbidden"))));
             rsx!()
@@ -121,7 +150,7 @@ pub fn UserSettings() -> Element {
                 },
                 role: "tab",
                 to: Route::UserSettingsResume {  },
-                "Resume"
+                {tid!("resume")}
             }
             Link {
                 class: if matches!(path, Route::UpdatePassword { .. }) {

@@ -28,6 +28,21 @@ axum-extra = { version = "0.10.1", features = [
     "typed-header",
 ], optional = true }
 
+# telemetry
+tracing-subscriber = { version = "0.3.19", features = [
+    "env-filter",
+    "registry",
+], optional = true }
+tower-http = { version = "0.6.6", features = ["trace"], optional = true }
+opentelemetry = { version = "0.30.0", optional = true }
+opentelemetry_sdk = { version = "0.30.0", features = [
+    "rt-tokio",
+    "trace",
+], optional = true }
+tracing-opentelemetry = { version = "0.31", optional = true }
+opentelemetry-otlp = { version = "0.30", features = [
+    "grpc-tonic",
+], optional = true }
 # database
 deadpool-postgres = { version = "0.14", features = [
     "rt_tokio_1",
@@ -71,6 +86,12 @@ server = [
     "dep:dioxus-cli-config",
     "dep:dioxus-fullstack",
     "dep:dashmap",
+    "dep:tracing-subscriber",
+    "dep:tower-http",
+    "dep:opentelemetry",
+    "dep:opentelemetry-otlp",
+    "dep:tracing-opentelemetry",
+    "dep:opentelemetry_sdk",
 ]
 
 [profile]

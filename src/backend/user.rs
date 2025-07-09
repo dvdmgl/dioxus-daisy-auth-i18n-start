@@ -1,4 +1,4 @@
-use tracing::{error, info, instrument};
+use tracing::{info, instrument};
 
 use crate::{
     backend::auth::hash_password,
@@ -21,7 +21,7 @@ impl From<tokio_postgres::Row> for User {
     }
 }
 
-#[instrument(level = "info", skip(client, password))]
+#[instrument(name = "User: create", level = "info", skip(client, password))]
 pub async fn create_user(
     client: &deadpool_postgres::Client,
     email: String,
@@ -40,21 +40,16 @@ pub async fn create_user(
             ],
         )
         .await?;
-    // Insert the new user into the database
     let row = client
         .query_one(&stmt, &[&email, &hashed_password, &UserRole::User])
-        .await
-        .map_err(|e| {
-            error!("Failed to insert user into DB: {e}");
-            BackendError::DbError(format!("Failed to create user: {e}"))
-        })?;
+        .await?;
     let user = User::from(row);
 
     info!("User created successfully: {}", user.email);
     Ok(user)
 }
 
-#[instrument(level = "info", skip(client, password))]
+#[instrument(name = "User: set_password", level = "info", skip(client, password))]
 pub async fn set_user_password(
     client: &deadpool_postgres::Client,
     user: i64,
@@ -74,19 +69,13 @@ pub async fn set_user_password(
             ],
         )
         .await?;
-    let _row = client
-        .query_one(&stmt, &[&user, &hashed_password])
-        .await
-        .map_err(|e| {
-            error!("Failed to update user password: {e}");
-            BackendError::DbError(format!("Failed to update user password: {e}"))
-        })?;
+    let _row = client.query_one(&stmt, &[&user, &hashed_password]).await?;
 
     info!("User updated successfully: {user}");
     Ok(())
 }
 
-#[instrument(level = "info", skip(client))]
+#[instrument(name = "User: check email", level = "info", skip(client))]
 pub async fn check_email(
     client: &deadpool_postgres::Client,
     email: String,
@@ -99,13 +88,15 @@ pub async fn check_email(
         )
         .await?;
     // check if the user email in db
-    let row = client.query_opt(&stmt, &[&email]).await.map_err(|e| {
-        error!("Failed to insert user into DB: {e}");
-        BackendError::DbError(format!("Failed to create user: {e}"))
-    })?;
+    let row = client.query_opt(&stmt, &[&email]).await?;
     if row.is_some() { Ok(false) } else { Ok(true) }
 }
 
+#[instrument(
+    name = "User: validate password",
+    level = "info",
+    skip(client, password)
+)]
 pub async fn validate_password(
     client: &deadpool_postgres::Client,
     user: i64,
@@ -120,6 +111,6 @@ pub async fn validate_password(
         )
         .await?;
 
-    let resp = dbg!(client.query_one(&stmt, &[&user]).await)?;
+    let resp = client.query_one(&stmt, &[&user]).await?;
     verify_password(password, resp.get::<_, &str>(0))
 }
