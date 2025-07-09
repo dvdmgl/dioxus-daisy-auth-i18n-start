@@ -12,3 +12,5 @@ package-lock.json
 node_modules/
 
 convert.html
+
+assets/tailwind.css
