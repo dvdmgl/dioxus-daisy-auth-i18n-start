@@ -18,7 +18,6 @@ pub struct Credentials {
     pub email: String,
     #[cfg_attr(feature = "server", validate(length(min = 8, max = 16)))]
     pub password: String,
-    pub next: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -100,6 +99,12 @@ pub struct User {
 pub struct LoggedUser {
     pub user: User,
     pub perms: HashSet<UserPermission>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LoginResponse {
+    pub user: LoggedUser,
+    pub next: Option<String>,
 }
 
 #[server(SubmitCreateUser)]

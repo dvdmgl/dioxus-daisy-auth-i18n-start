@@ -3,19 +3,19 @@ use dioxus_i18n::tid;
 
 use super::components::{EmailInput, PasswordInput};
 use crate::{
-    app::MyState,
+    app::AppGlobalState,
     components::Alert,
     shared::user::{Credentials, LoggedUser},
 };
 
 #[component]
 pub fn Login() -> Element {
-    let mut alert = use_context::<MyState>();
-
+    let mut alert = use_context::<AppGlobalState>();
     let mut logged = use_context::<Signal<Option<LoggedUser>>>();
     let nav = use_navigator();
 
     let form_submit = move |evt: Event<FormData>| {
+        let redirect: String = alert.redirect.read().clone();
         evt.prevent_default();
         let values = evt.values();
         let payload = Credentials {
@@ -29,26 +29,26 @@ pub fn Login() -> Element {
                 .and_then(|v| v.first())
                 .cloned()
                 .unwrap_or_default(),
-            next: None,
         };
 
         async move {
             tracing::debug!("sending to server");
-            let resp = crate::shared::user::login_user(payload.clone()).await;
-            match resp {
+            let response = crate::shared::user::login_user(payload.clone()).await;
+            match response {
                 Ok(Some(user)) => {
                     logged.set(Some(user.clone()));
                     alert.alert.set(Some((
                         Alert::Info,
                         tid!("login.suc", username: user.user.email),
                     )));
-                    nav.push("/");
+                    tracing::debug!("it should redirect to: {}", &redirect);
+                    nav.push(redirect);
                 }
                 Err(e) => {
                     alert.alert.set(Some((Alert::Error, e.to_string())));
                 }
                 Ok(None) => {
-                    tracing::info!("response has nothing");
+                    tracing::warn!("login response is empty");
                 }
             }
         }

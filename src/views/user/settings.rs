@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_i18n::tid;
 
 use crate::{
-    app::{MyState, Route},
+    app::{AppGlobalState, Route},
     components::Alert,
     shared::user::{ChangePassword, LoggedUser},
 };
@@ -12,7 +12,7 @@ use super::components::PasswordInput;
 #[component]
 pub fn UpdatePassword() -> Element {
     let navigator = use_navigator();
-    let mut alert = use_context::<MyState>();
+    let mut alert = use_context::<AppGlobalState>();
     let form_submit = move |evt: Event<FormData>| {
         evt.prevent_default();
         let values = evt.values();
@@ -78,12 +78,12 @@ pub fn UpdatePassword() -> Element {
 #[component]
 pub fn UserSettingsResume() -> Element {
     let mut auth = use_context::<Signal<Option<LoggedUser>>>();
-    let mut alert = use_context::<MyState>();
+    let mut app_state = use_context::<AppGlobalState>();
     let nav = use_navigator();
     let logout = move |_: Event<_>| async move {
         let _ = crate::shared::user::user_session_logout().await;
         auth.set(None);
-        alert.alert.set(Some((Alert::Info, tid!("logout.suc"))));
+        app_state.alert.set(Some((Alert::Info, tid!("logout.suc"))));
         nav.push("/");
     };
 
@@ -131,7 +131,7 @@ pub fn UserSettingsResume() -> Element {
             }
         }
         None => {
-            alert.alert.set(Some((Alert::Error, tid!("forbidden"))));
+            app_state.alert.set(Some((Alert::Error, tid!("forbidden"))));
             rsx!()
         }
     }
@@ -139,30 +139,44 @@ pub fn UserSettingsResume() -> Element {
 
 #[component]
 pub fn UserSettings() -> Element {
+    let auth = use_context::<Signal<Option<LoggedUser>>>();
+    let mut app_state = use_context::<AppGlobalState>();
     let path: Route = use_route();
-    rsx! {
-        nav { class: "tabs tabs-border", role: "tablist",
-            Link {
-                class: if matches!(path, Route::UserSettingsResume { .. }) {
-                    "tab tab-active"
-                } else {
-                    "tab"
-                },
-                role: "tab",
-                to: Route::UserSettingsResume {  },
-                {tid!("resume")}
-            }
-            Link {
-                class: if matches!(path, Route::UpdatePassword { .. }) {
-                    "tab tab-active"
-                } else {
-                    "tab"
-                },
-                role: "tab",
-                to: Route::UpdatePassword {  },
-                {tid!("frm-password.change")}
+    let nav = use_navigator();
+
+    match auth() {
+        Some(_) => {
+            rsx! {
+                nav { class: "tabs tabs-border", role: "tablist",
+                    Link {
+                        class: if matches!(path, Route::UserSettingsResume { .. }) {
+                            "tab tab-active"
+                        } else {
+                            "tab"
+                        },
+                        role: "tab",
+                        to: Route::UserSettingsResume {  },
+                        {tid!("resume")}
+                    }
+                    Link {
+                        class: if matches!(path, Route::UpdatePassword { .. }) {
+                            "tab tab-active"
+                        } else {
+                            "tab"
+                        },
+                        role: "tab",
+                        to: Route::UpdatePassword {  },
+                        {tid!("frm-password.change")}
+                    }
+                }
+                Outlet::<Route> {}
             }
         }
-        Outlet::<Route> {}
+        None => {
+            app_state.alert.set(Some((Alert::Error, tid!("forbidden"))));
+            app_state.redirect.set(path.to_string());
+            nav.push(Route::Login {});
+            rsx!()
+        }
     }
 }

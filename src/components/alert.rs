@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_i18n::tid;
 
-use crate::app::MyState;
+use crate::app::AppGlobalState;
 
 pub enum Alert {
     Info,
@@ -33,7 +33,7 @@ impl Alert {
 
 #[component]
 pub fn AlertDisplay() -> Element {
-    let mut alert_msg = use_context::<MyState>().alert;
+    let mut alert_msg = use_context::<AppGlobalState>().alert;
 
     let run_timeout = dioxus_time::use_timeout(std::time::Duration::from_secs(10), move |()| {
         tracing::debug!("timer closed alert message");

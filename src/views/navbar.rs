@@ -1,5 +1,5 @@
 use crate::{
-    app::{MyState, Route},
+    app::{AppGlobalState, Route},
     components::{Alert, ThemeControl},
     i18n::LanguageSelect,
     shared::user::LoggedUser,
@@ -43,7 +43,7 @@ pub fn NavBar() -> Element {
 #[component]
 fn AuthOptions() -> Element {
     let mut auth = use_context::<Signal<Option<LoggedUser>>>();
-    let mut alert = use_context::<MyState>();
+    let mut alert = use_context::<AppGlobalState>();
     let nav = use_navigator();
     let logout = move |_: Event<_>| async move {
         let _ = crate::shared::user::user_session_logout().await;

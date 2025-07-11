@@ -34,9 +34,19 @@ pub enum Route {
                 UpdatePassword {},
 }
 
-#[derive(Clone, Copy, Default)]
-pub struct MyState {
+#[derive(Clone, Copy)]
+pub struct AppGlobalState {
     pub alert: Signal<Option<(Alert, String)>>,
+    pub redirect: Signal<String>,
+}
+
+impl Default for AppGlobalState {
+    fn default() -> Self {
+        Self {
+            alert: Signal::default(),
+            redirect: Signal::new("/".into()),
+        }
+    }
 }
 
 // handling FOUD, if the store doesn't have `data-theme` will be set the window.matchMedia,
@@ -77,7 +87,7 @@ pub fn App() -> Element {
     tracing::debug!("is there a logged user {:?}", user);
     use_context_provider(|| Signal::new(user));
 
-    use_context_provider(MyState::default);
+    use_context_provider(AppGlobalState::default);
     use_init_i18n(|| {
         I18nConfig::new(crate::i18n::EN_US.clone())
             .with_locale(Locale::new_static(

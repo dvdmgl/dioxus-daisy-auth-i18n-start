@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_i18n::tid;
 
 use crate::{
-    app::{MyState, Route},
+    app::{AppGlobalState, Route},
     components::Alert,
     shared::user::{CheckEmail, RegisterPayload, check_user_is_free},
 };
@@ -11,7 +11,7 @@ use super::components::{EmailInput, PasswordInput};
 
 #[component]
 pub fn Register() -> Element {
-    let mut alert = use_context::<MyState>();
+    let mut alert = use_context::<AppGlobalState>();
     let mut email = use_signal(String::new);
     let mut email_valid = use_signal(|| None);
 
